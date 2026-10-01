@@ -6,6 +6,7 @@
 #include <Updater.h>
 
 ESP8266WebServer server(80);
+#define LED_PIN LED_BUILTIN
 
 String ssid;
 String password;
@@ -16,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/new_repo/main/build/esp32.esp32.esp32/test.ino.bin";
 
-const int CURRENT_VERSION = 1;
+const int CURRENT_VERSION = 2;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -129,7 +130,6 @@ void startWiFiConfig() {
 
 
   server.on("/", HTTP_GET, []() {
-
     String page = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -163,7 +163,6 @@ void startWiFiConfig() {
 
 
   server.on("/save", HTTP_POST, []() {
-
     String newSSID = server.arg("ssid");
     String newPassword = server.arg("password");
 
@@ -389,6 +388,9 @@ void checkOTA() {
 
 void setup() {
 
+
+  pinMode(LED_PIN, OUTPUT);
+
   Serial.begin(115200);
 
   delay(1000);
@@ -441,5 +443,9 @@ void setup() {
 void loop() {
 
   server.handleClient();
+  digitalWrite(LED_PIN, LOW);  // LED ON
+  delay(5000);
 
+  digitalWrite(LED_PIN, HIGH);  // LED OFF
+  delay(1000);
 }
