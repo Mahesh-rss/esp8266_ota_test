@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/new_repo/main/build/esp32.esp32.esp32/test.ino.bin";
 
-const int CURRENT_VERSION = 2;
+const int CURRENT_VERSION = 3;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -68,17 +68,9 @@ void saveWiFiCredentials(String newSSID, String newPassword) {
 
 bool connectToWiFi() {
 
-  if (ssid.length() == 0) {
-    return false;
-  }
-
   Serial.println();
   Serial.print("Connecting to WiFi: ");
   Serial.println(ssid);
-
-  WiFi.mode(WIFI_AP_STA);
-
-  WiFi.softAP("ESP8266-Setup");
 
   WiFi.begin(ssid.c_str(), password.c_str());
 
@@ -108,9 +100,6 @@ bool connectToWiFi() {
   }
 
   Serial.println("WiFi connection failed");
-
-  Serial.print("Setup AP IP: ");
-  Serial.println(WiFi.softAPIP());
 
   return false;
 }
@@ -261,15 +250,11 @@ void startWiFiConfig() {
 void checkOTA() {
 
   if (WiFi.status() != WL_CONNECTED) {
-
     Serial.println("WiFi not connected");
-    Serial.println("Skipping OTA");
-
     return;
   }
 
   WiFiClientSecure client;
-
   client.setInsecure();
 
   HTTPClient http;
@@ -287,7 +272,6 @@ void checkOTA() {
   if (httpCode == HTTP_CODE_OK) {
 
     String serverVersion = http.getString();
-
     serverVersion.trim();
 
     int newVersion = serverVersion.toInt();
@@ -297,7 +281,6 @@ void checkOTA() {
 
     Serial.print("Server version: ");
     Serial.println(newVersion);
-
 
     if (newVersion > CURRENT_VERSION) {
 
@@ -312,14 +295,12 @@ void checkOTA() {
       Serial.print("Firmware HTTP code: ");
       Serial.println(httpCode);
 
-
       if (httpCode == HTTP_CODE_OK) {
 
         int contentLength = http.getSize();
 
         Serial.print("Firmware size: ");
         Serial.println(contentLength);
-
 
         if (contentLength > 0) {
 
@@ -336,16 +317,13 @@ void checkOTA() {
             Serial.print("Written: ");
             Serial.println(written);
 
-
             if (written == contentLength) {
 
               Serial.println("Firmware written successfully");
 
-
               if (Update.end() && Update.isFinished()) {
 
                 Serial.println("OTA successful");
-
                 Serial.println("Restarting...");
 
                 http.end();
@@ -373,14 +351,12 @@ void checkOTA() {
     } else {
 
       Serial.println("No update required");
-
       http.end();
     }
 
   } else {
 
     Serial.println("Failed to check version");
-
     http.end();
   }
 }
@@ -444,7 +420,7 @@ void loop() {
 
   server.handleClient();
   digitalWrite(LED_PIN, LOW);  // LED ON
-  delay(5000);
+  delay(8000);
 
   digitalWrite(LED_PIN, HIGH);  // LED OFF
   delay(1000);
