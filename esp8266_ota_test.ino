@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 4;
+const int CURRENT_VERSION = 5;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -108,15 +108,15 @@ bool connectToWiFi() {
 void startWiFiConfig() {
   WiFi.mode(WIFI_AP_STA);
 
-bool apStarted = WiFi.softAP("ESP8266-Setup");
+  bool apStarted = WiFi.softAP("ESP8266-Setup");
 
-if (apStarted) {
-  Serial.println("Setup AP started");
-  Serial.print("Setup AP IP: ");
-  Serial.println(WiFi.softAPIP());
-} else {
-  Serial.println("Setup AP failed");
-}
+  if (apStarted) {
+    Serial.println("Setup AP started");
+    Serial.print("Setup AP IP: ");
+    Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("Setup AP failed");
+  }
 
   WiFi.begin(ssid.c_str(), password.c_str());
 
@@ -278,43 +278,9 @@ void checkOTA() {
 
   Serial.println();
   Serial.println("Checking OTA...");
-
-  http.begin(client, version_url);
-
-  int httpCode = http.GET();
-
-  Serial.print("Version HTTP code: ");
-  Serial.println(httpCode);
-
-  if (httpCode != HTTP_CODE_OK) {
-    Serial.println("Failed to check version");
-    http.end();
-    return;
-  }
-
-  String serverVersion = http.getString();
-  serverVersion.trim();
-
-  int newVersion = serverVersion.toInt();
-
-  Serial.print("Current version: ");
-  Serial.println(CURRENT_VERSION);
-
-  Serial.print("Server version: ");
-  Serial.println(newVersion);
-
-  http.end();
-
-  if (newVersion <= CURRENT_VERSION) {
-    Serial.println("No update required");
-    return;
-  }
-
-  Serial.println("New firmware available");
-
   http.begin(client, firmware_url);
 
-  httpCode = http.GET();
+  int httpCode = http.GET();
 
   Serial.print("Firmware HTTP code: ");
   Serial.println(httpCode);
@@ -347,45 +313,16 @@ void checkOTA() {
 
   WiFiClient* stream = http.getStreamPtr();
 
-  uint8_t buffer[1024];
-  size_t totalWritten = 0;
+  size_t written = Update.writeStream(*stream);
 
-  while (http.connected() && totalWritten < contentLength) {
+  Serial.print("Written: ");
+  Serial.println(written);
 
-    size_t available = stream->available();
-
-    if (available) {
-
-      size_t bytesToRead = available;
-
-      if (bytesToRead > sizeof(buffer)) {
-        bytesToRead = sizeof(buffer);
-      }
-
-      size_t bytesRead = stream->readBytes(buffer, bytesToRead);
-
-      if (bytesRead > 0) {
-        size_t written = Update.write(buffer, bytesRead);
-
-        totalWritten += written;
-
-        Serial.print("Written: ");
-        Serial.println(totalWritten);
-      }
-    }
-
-    delay(1);
-  }
-
-  Serial.print("Total written: ");
-  Serial.println(totalWritten);
-
-  if (totalWritten == contentLength) {
+  if (written == contentLength) {
 
     Serial.println("Firmware written successfully");
 
     if (Update.end() && Update.isFinished()) {
-
       Serial.println("OTA successful");
       Serial.println("Restarting...");
 
@@ -393,15 +330,12 @@ void checkOTA() {
 
       delay(1000);
       ESP.restart();
-
     } else {
-
       Serial.print("Update.end failed: ");
       Serial.println(Update.getError());
     }
 
   } else {
-
     Serial.println("Firmware write incomplete");
   }
 
@@ -444,6 +378,9 @@ void setup() {
     Serial.println();
     checkOTA();
   }
+  Serial.println(ESP.getFreeSketchSpace());
+  Serial.println(ESP.getFlashChipRealSize());
+  Serial.println(ESP.getFlashChipSize());
 }
 
 
