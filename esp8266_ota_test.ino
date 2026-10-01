@@ -15,7 +15,7 @@ String password;
 const char* version_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/version.txt";
 const char* firmware_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/build/esp32.esp32.esp32/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 1;
+const int CURRENT_VERSION = 3;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -381,5 +381,5 @@ void loop() {
   delay(5000);
 
   digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
+  delay(1000);
 }
