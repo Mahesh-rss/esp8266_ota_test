@@ -5,42 +5,22 @@
 #include <EEPROM.h>
 #include <Updater.h>
 
+#define LED_BUILTIN 2
+
 ESP8266WebServer server(80);
 
 String ssid;
 String password;
 
-const char* version_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/version.txt";
-const char* firmware_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp32.esp32.esp32/esp8266_ota_test.ino.bin";
+const char* version_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/version.txt";
+const char* firmware_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/build/esp32.esp32.esp32/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 2;
+const int CURRENT_VERSION = 1;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
 #define PASS_ADDR 64
 
-#define LED_PIN LED_BUILTIN
-
-bool configMode = false;
-unsigned long ledTimer = 0;
-bool ledState = false;
-
-void ledOn() {
-  digitalWrite(LED_PIN, LOW);
-}
-
-void ledOff() {
-  digitalWrite(LED_PIN, HIGH);
-}
-
-void ledBlink(int times, int delayTime) {
-  for (int i = 0; i < times; i++) {
-    ledOn();
-    delay(delayTime);
-    ledOff();
-    delay(delayTime);
-  }
-}
 
 
 void saveCredentials(String newSSID, String newPassword) {
@@ -100,9 +80,7 @@ bool connectToWiFi() {
   int attempts = 0;
 
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    ledOn();
     delay(250);
-    ledOff();
     delay(250);
     Serial.print(".");
     attempts++;
@@ -111,7 +89,6 @@ bool connectToWiFi() {
   Serial.println();
 
   if (WiFi.status() == WL_CONNECTED) {
-    ledOn();
     Serial.println("WiFi connected");
     Serial.print("WiFi IP: ");
     Serial.println(WiFi.localIP());
@@ -119,15 +96,11 @@ bool connectToWiFi() {
     Serial.println(WiFi.softAPIP());
     return true;
   }
-
-  ledOff();
   Serial.println("WiFi connection failed");
   return false;
 }
 
 void startWiFiConfig() {
-  configMode = true;
-
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP("ESP8266-Setup");
 
@@ -171,16 +144,12 @@ void startWiFiConfig() {
     int attempts = 0;
 
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      ledOn();
       delay(250);
-      ledOff();
       delay(250);
       attempts++;
     }
 
     if (WiFi.status() != WL_CONNECTED) {
-      ledBlink(3, 200);
-
       WiFi.mode(WIFI_AP_STA);
       WiFi.softAP("ESP8266-Setup");
 
@@ -196,9 +165,6 @@ void startWiFiConfig() {
     ssid = newSSID;
     password = newPassword;
     saveCredentials(ssid, password);
-
-    ledOn();
-
     server.send(200, "text/html",
       "<html><body style='text-align:center;font-family:Arial;padding-top:60px;'>"
       "<h2 style='color:#4CAF50;'>Settings Saved Successfully!</h2>"
@@ -328,19 +294,6 @@ void performOTA() {
             Update.write(buffer, readSize);
 
             written += readSize;
-
-            if (millis() - lastBlink > 100) {
-
-              ledState = !ledState;
-
-              if (ledState) {
-                ledOn();
-              } else {
-                ledOff();
-              }
-
-              lastBlink = millis();
-            }
           }
 
           yield();
@@ -358,11 +311,6 @@ void performOTA() {
             if (Update.isFinished()) {
 
               Serial.println("OTA SUCCESS");
-
-              ledBlink(3, 200);
-
-              ledOn();
-
               Serial.println("Restarting...");
 
               delay(2000);
@@ -372,36 +320,26 @@ void performOTA() {
             } else {
 
               Serial.println("OTA not finished");
-
-              ledOff();
             }
 
           } else {
 
             Serial.println("OTA update failed");
-
-            ledOff();
           }
 
         } else {
 
           Serial.println("Firmware write incomplete");
-
-          ledOff();
         }
 
       } else {
 
         Serial.println("Not enough space for OTA");
-
-        ledOff();
       }
 
     } else {
 
       Serial.println("Invalid firmware size");
-
-      ledOff();
     }
 
   } else {
@@ -409,8 +347,6 @@ void performOTA() {
     Serial.print("Firmware HTTP error: ");
 
     Serial.println(httpCode);
-
-    ledOff();
   }
 
 
@@ -419,12 +355,7 @@ void performOTA() {
 
 
 void setup() {
-  Serial.begin(115200);
-
-  pinMode(LED_PIN, OUTPUT);
-  ledOff();
-
-  Serial.println();
+  Serial.begin(115200);Serial.println();
   Serial.println("Starting...");
 
   EEPROM.begin(EEPROM_SIZE);
@@ -438,7 +369,6 @@ void setup() {
   Serial.println("Saved WiFi credentials found");
 
   if (connectToWiFi()) {
-    configMode = false;
     checkForUpdate();
   } else {
     startWiFiConfig();
@@ -447,17 +377,9 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(5000);
 
-  if (configMode) {
-    if (millis() - ledTimer >= 500) {
-      ledTimer = millis();
-      ledState = !ledState;
-
-      if (ledState) {
-        ledOn();
-      } else {
-        ledOff();
-      }
-    }
-  }
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(100);
 }
