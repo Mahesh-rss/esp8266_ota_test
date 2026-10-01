@@ -6,7 +6,7 @@
 #include <Updater.h>
 
 ESP8266WebServer server(80);
-#define LED_PIN 4
+#define LED_PIN 14
 
 String ssid;
 String password;
@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 5;
+const int CURRENT_VERSION = 6;
 
 
 #define EEPROM_SIZE 128
