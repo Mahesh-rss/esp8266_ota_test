@@ -13,25 +13,51 @@ String password;
 const char* version_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/version.txt";
 const char* firmware_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/build/esp32.esp32.esp32/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 1;
+const int CURRENT_VERSION = 2;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
 #define PASS_ADDR 64
 
+#define LED_PIN LED_BUILTIN
+
+bool configMode = false;
+unsigned long ledTimer = 0;
+bool ledState = false;
+
+void ledOn() {
+  digitalWrite(LED_PIN, LOW);
+}
+
+void ledOff() {
+  digitalWrite(LED_PIN, HIGH);
+}
+
+void ledBlink(int times, int delayTime) {
+  for (int i = 0; i < times; i++) {
+    ledOn();
+    delay(delayTime);
+    ledOff();
+    delay(delayTime);
+  }
+}
+
 
 void saveCredentials(String newSSID, String newPassword) {
 
   for (int i = 0; i < 64; i++) {
+
     EEPROM.write(SSID_ADDR + i, 0);
     EEPROM.write(PASS_ADDR + i, 0);
   }
 
   for (int i = 0; i < newSSID.length() && i < 63; i++) {
+
     EEPROM.write(SSID_ADDR + i, newSSID[i]);
   }
 
   for (int i = 0; i < newPassword.length() && i < 63; i++) {
+
     EEPROM.write(PASS_ADDR + i, newPassword[i]);
   }
 
@@ -45,6 +71,7 @@ void loadCredentials() {
   char passwordBuffer[64];
 
   for (int i = 0; i < 64; i++) {
+
     ssidBuffer[i] = EEPROM.read(SSID_ADDR + i);
     passwordBuffer[i] = EEPROM.read(PASS_ADDR + i);
   }
@@ -61,18 +88,22 @@ void loadCredentials() {
 
 
 bool connectToWiFi() {
-
   Serial.println();
   Serial.print("Connecting to WiFi: ");
   Serial.println(ssid);
 
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP("ESP8266-Setup");
+
   WiFi.begin(ssid.c_str(), password.c_str());
 
   int attempts = 0;
 
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    delay(500);
+    ledOn();
+    delay(250);
+    ledOff();
+    delay(250);
     Serial.print(".");
     attempts++;
   }
@@ -80,101 +111,43 @@ bool connectToWiFi() {
   Serial.println();
 
   if (WiFi.status() == WL_CONNECTED) {
-
+    ledOn();
     Serial.println("WiFi connected");
-    Serial.print("IP address: ");
+    Serial.print("WiFi IP: ");
     Serial.println(WiFi.localIP());
-
+    Serial.print("Setup AP IP: ");
+    Serial.println(WiFi.softAPIP());
     return true;
-
-  } else {
-
-    Serial.println("WiFi connection failed");
-
-    return false;
   }
+
+  ledOff();
+  Serial.println("WiFi connection failed");
+  return false;
 }
 
-
 void startWiFiConfig() {
+  configMode = true;
 
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP("ESP8266-Setup");
 
-  WiFi.softAP("ESP8266-Setup", "12345678");
-
-  Serial.println();
   Serial.println("WiFi configuration mode");
-  Serial.println("Connect mobile to:");
-  Serial.println("ESP8266-Setup");
-  Serial.println("Password: 12345678");
-  Serial.println("Open: 192.168.4.1");
-
+  Serial.println("Connect to ESP8266-Setup");
+  Serial.println("Open 192.168.4.1");
 
   server.on("/", []() {
-    String page = "<!DOCTYPE html>";
-    page += "<html>";
-    page += "<head>";
-    page += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-    page += "<style>";
-
-    page += "body{";
-    page += "font-family:Arial;";
-    page += "background:#f4f4f9;";
-    page += "text-align:center;";
-    page += "padding-top:50px;";
-    page += "}";
-
-    page += ".box{";
-    page += "background:white;";
-    page += "padding:30px;";
-    page += "margin:auto;";
-    page += "max-width:400px;";
-    page += "border-radius:10px;";
-    page += "box-shadow:0 4px 8px rgba(0,0,0,0.15);";
-    page += "}";
-
-    page += "input{";
-    page += "width:90%;";
-    page += "padding:12px;";
-    page += "margin:8px;";
-    page += "border:1px solid #ccc;";
-    page += "border-radius:5px;";
-    page += "}";
-
-    page += "input[type=submit]{";
-    page += "background:#4CAF50;";
-    page += "color:white;";
-    page += "border:none;";
-    page += "cursor:pointer;";
-    page += "}";
-
-    page += "</style>";
-    page += "</head>";
-
-    page += "<body>";
-
-    page += "<div class='box'>";
-
-    page += "<h2>WiFi Configuration</h2>";
-
-    page += "<form method='POST' action='/save'>";
-
-    page += "<input type='text' name='ssid' placeholder='WiFi SSID' required>";
-
-    page += "<input type='password' name='password' placeholder='WiFi Password' required>";
-
-    page += "<input type='submit' value='Save Settings'>";
-
-    page += "</form>";
-
-    page += "</div>";
-
-    page += "</body>";
-    page += "</html>";
+    String page =
+      "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
+      "</head><body style='font-family:Arial;text-align:center;padding-top:40px'>"
+      "<h2>WiFi Configuration</h2>"
+      "<form method='POST' action='/save'>"
+      "<input name='ssid' placeholder='WiFi SSID' required><br><br>"
+      "<input name='password' type='password' placeholder='WiFi Password' required><br><br>"
+      "<input type='submit' value='Save Settings'>"
+      "</form></body></html>";
 
     server.send(200, "text/html", page);
   });
-
 
   server.on("/save", HTTP_POST, []() {
     String newSSID = server.arg("ssid");
@@ -183,99 +156,64 @@ void startWiFiConfig() {
     newSSID.trim();
     newPassword.trim();
 
-
     if (newSSID.length() == 0 || newPassword.length() == 0) {
-
-      server.send(
-        400,
-        "text/html",
-        "<html><body style='text-align:center;font-family:Arial;padding-top:60px;'>"
-        "<h2 style='color:red;'>Error!</h2>"
-        "<p>Please fill all fields.</p>"
-        "</body></html>");
-
+      server.send(400, "text/html",
+        "<h2>Error!</h2><p>Please fill all fields.</p><a href='/'>Go Back</a>");
       return;
     }
 
-
-    Serial.println();
     Serial.println("Testing WiFi credentials...");
 
-    WiFi.mode(WIFI_STA);
-
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.softAP("ESP8266-Setup");
     WiFi.begin(newSSID.c_str(), newPassword.c_str());
 
     int attempts = 0;
 
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-
-      delay(500);
-
-      Serial.print(".");
-
+      ledOn();
+      delay(250);
+      ledOff();
+      delay(250);
       attempts++;
     }
 
-    Serial.println();
-
-
     if (WiFi.status() != WL_CONNECTED) {
+      ledBlink(3, 200);
 
-      Serial.println("WiFi connection failed");
+      WiFi.mode(WIFI_AP_STA);
+      WiFi.softAP("ESP8266-Setup");
 
-      server.send(
-        400,
-        "text/html",
+      server.send(400, "text/html",
         "<html><body style='text-align:center;font-family:Arial;padding-top:60px;'>"
         "<h2 style='color:#e53935;'>WiFi Connection Failed!</h2>"
         "<p>Please check your SSID and password.</p>"
-        "<br><a href='/'>Try Again</a>"
+        "<a href='/'>Try Again</a>"
         "</body></html>");
-
-      WiFi.mode(WIFI_AP);
-      WiFi.softAP("ESP8266-Setup", "12345678");
-
       return;
     }
 
-
-    Serial.println("WiFi connected");
-
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-
-
     ssid = newSSID;
     password = newPassword;
-
     saveCredentials(ssid, password);
 
+    ledOn();
 
-    server.send(
-      200,
-      "text/html",
+    server.send(200, "text/html",
       "<html><body style='text-align:center;font-family:Arial;padding-top:60px;'>"
-      "<h2 style='color:#4CAF50;'>Success!</h2>"
-      "<p>WiFi connected successfully.</p>"
-      "<p>Settings saved.</p>"
-      "<p>Device restarting...</p>"
+      "<h2 style='color:#4CAF50;'>Settings Saved Successfully!</h2>"
+      "<p>WiFi credentials have been saved.</p>"
+      "<p>Device will restart in a few seconds...</p>"
       "</body></html>");
 
-
     delay(3000);
-
     ESP.restart();
   });
 
-
   server.begin();
-
-  Serial.println("Configuration server started");
 }
 
-
 void checkForUpdate() {
-
   WiFiClient client;
   HTTPClient http;
 
@@ -368,7 +306,46 @@ void performOTA() {
 
       if (Update.begin(contentLength)) {
 
-        size_t written = Update.writeStream(http.getStream());
+        WiFiClient* stream = http.getStreamPtr();
+
+        size_t written = 0;
+
+        uint8_t buffer[128];
+
+        unsigned long lastBlink = millis();
+
+
+        while (written < contentLength) {
+
+          size_t available = stream->available();
+
+          if (available) {
+
+            int readSize = stream->readBytes(
+              buffer,
+              min((size_t)sizeof(buffer), available));
+
+            Update.write(buffer, readSize);
+
+            written += readSize;
+
+            if (millis() - lastBlink > 100) {
+
+              ledState = !ledState;
+
+              if (ledState) {
+                ledOn();
+              } else {
+                ledOff();
+              }
+
+              lastBlink = millis();
+            }
+          }
+
+          yield();
+        }
+
 
         Serial.print("Written: ");
         Serial.println(written);
@@ -382,37 +359,58 @@ void performOTA() {
 
               Serial.println("OTA SUCCESS");
 
+              ledBlink(3, 200);
+
+              ledOn();
+
               Serial.println("Restarting...");
 
               delay(2000);
 
               ESP.restart();
+
+            } else {
+
+              Serial.println("OTA not finished");
+
+              ledOff();
             }
 
           } else {
 
             Serial.println("OTA update failed");
+
+            ledOff();
           }
 
         } else {
 
           Serial.println("Firmware write incomplete");
+
+          ledOff();
         }
 
       } else {
 
         Serial.println("Not enough space for OTA");
+
+        ledOff();
       }
 
     } else {
 
       Serial.println("Invalid firmware size");
+
+      ledOff();
     }
 
   } else {
 
     Serial.print("Firmware HTTP error: ");
+
     Serial.println(httpCode);
+
+    ledOff();
   }
 
 
@@ -421,45 +419,45 @@ void performOTA() {
 
 
 void setup() {
-
   Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+  ledOff();
 
   Serial.println();
   Serial.println("Starting...");
 
-
   EEPROM.begin(EEPROM_SIZE);
-
   loadCredentials();
 
-
   if (ssid.length() == 0 || password.length() == 0) {
-
-    Serial.println("No WiFi credentials found");
-
     startWiFiConfig();
-
     return;
   }
 
-
   Serial.println("Saved WiFi credentials found");
 
-
   if (connectToWiFi()) {
-
+    configMode = false;
     checkForUpdate();
-
   } else {
-
-    Serial.println("Starting WiFi configuration...");
-
     startWiFiConfig();
   }
 }
 
-
 void loop() {
-
   server.handleClient();
+
+  if (configMode) {
+    if (millis() - ledTimer >= 500) {
+      ledTimer = millis();
+      ledState = !ledState;
+
+      if (ledState) {
+        ledOn();
+      } else {
+        ledOff();
+      }
+    }
+  }
 }
