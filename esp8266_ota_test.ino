@@ -12,9 +12,8 @@ ESP8266WebServer server(80);
 String ssid;
 String password;
 
-const char* version_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/version.txt";
-const char* firmware_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/master/build/esp32.esp32.esp32/esp8266_ota_test.ino.bin";
-
+const char* version_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/version.txt";
+const char* firmware_url = "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp32.esp32.esp32/esp8266_ota_test.ino.bin";
 const int CURRENT_VERSION = 3;
 
 #define EEPROM_SIZE 128
