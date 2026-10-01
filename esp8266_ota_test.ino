@@ -17,7 +17,11 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
+<<<<<<< HEAD
 const int CURRENT_VERSION = 9;
+=======
+const int CURRENT_VERSION = 1;
+>>>>>>> d4473e1 (update version 1)
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -106,7 +110,7 @@ bool connectToWiFi() {
 
 
 void startWiFiConfig() {
-  
+
 
 
   server.on("/", HTTP_GET, []() {
@@ -286,7 +290,18 @@ void checkOTA() {
 
   WiFiClient* stream = http.getStreamPtr();
 
+  Serial.print("Available before write: ");
+  Serial.println(stream->available());
+
+  delay(1000);
+
+  Serial.print("Available after 1 sec: ");
+  Serial.println(stream->available());
+
   size_t written = Update.writeStream(*stream);
+
+  Serial.print("Written: ");
+  Serial.println(written);
 
   Serial.print("Written: ");
   Serial.println(written);
@@ -335,12 +350,11 @@ void setup() {
     Serial.println("Setup AP started");
     Serial.print("Setup AP IP: ");
     Serial.println(WiFi.softAPIP());
-  } 
+  }
 
   if (ssid.length() > 0) {
     connectToWiFi();
-  }
-  else {
+  } else {
     Serial.println("Setup AP failed");
   }
 
