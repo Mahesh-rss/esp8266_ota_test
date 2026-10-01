@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 7;
+const int CURRENT_VERSION = 8;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -106,34 +106,7 @@ bool connectToWiFi() {
 
 
 void startWiFiConfig() {
-  WiFi.mode(WIFI_AP_STA);
-
-  bool apStarted = WiFi.softAP("ESP8266-Setup");
-
-  if (apStarted) {
-    Serial.println("Setup AP started");
-    Serial.print("Setup AP IP: ");
-    Serial.println(WiFi.softAPIP());
-  } else {
-    Serial.println("Setup AP failed");
-  }
-
-  WiFi.begin(ssid.c_str(), password.c_str());
-
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
-  }
-
-  Serial.println();
-  Serial.println("WiFi connected");
-
-  Serial.print("WiFi IP: ");
-  Serial.println(WiFi.localIP());
-
-  Serial.print("Setup AP IP: ");
-  Serial.println(WiFi.softAPIP());
-
+  
 
 
   server.on("/", HTTP_GET, []() {
@@ -387,7 +360,7 @@ void loop() {
 
   server.handleClient();
   digitalWrite(LED_PIN, LOW);  // LED ON
-  delay(10000);
+  delay(1000);
 
   digitalWrite(LED_PIN, HIGH);  // LED OFF
   delay(1000);
