@@ -17,11 +17,8 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
-<<<<<<< HEAD
-const int CURRENT_VERSION = 9;
-=======
 const int CURRENT_VERSION = 1;
->>>>>>> d4473e1 (update version 1)
+
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
