@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 2;
+const int CURRENT_VERSION = 3;
 
 
 #define EEPROM_SIZE 128
@@ -252,9 +252,43 @@ void checkOTA() {
 
   Serial.println();
   Serial.println("Checking OTA...");
-  http.begin(client, firmware_url);
+
+  http.begin(client, version_url);
 
   int httpCode = http.GET();
+
+  Serial.print("Version HTTP code: ");
+  Serial.println(httpCode);
+
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("Failed to check version");
+    http.end();
+    return;
+  }
+
+  String serverVersion = http.getString();
+  serverVersion.trim();
+
+  int serverVersionNumber = serverVersion.toInt();
+
+  Serial.print("Current version: ");
+  Serial.println(CURRENT_VERSION);
+
+  Serial.print("Server version: ");
+  Serial.println(serverVersionNumber);
+
+  http.end();
+
+  if (serverVersionNumber <= CURRENT_VERSION) {
+    Serial.println("No update required");
+    return;
+  }
+
+  Serial.println("New firmware available");
+
+  http.begin(client, firmware_url);
+
+  httpCode = http.GET();
 
   Serial.print("Firmware HTTP code: ");
   Serial.println(httpCode);
@@ -287,18 +321,7 @@ void checkOTA() {
 
   WiFiClient* stream = http.getStreamPtr();
 
-  Serial.print("Available before write: ");
-  Serial.println(stream->available());
-
-  delay(1000);
-
-  Serial.print("Available after 1 sec: ");
-  Serial.println(stream->available());
-
   size_t written = Update.writeStream(*stream);
-
-  Serial.print("Written: ");
-  Serial.println(written);
 
   Serial.print("Written: ");
   Serial.println(written);
