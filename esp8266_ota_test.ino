@@ -12,10 +12,10 @@ String ssid;
 String password;
 
 const char* version_url =
-  "https://raw.githubusercontent.com/Mahesh-rss/new_repo/main/version.txt";
+  "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/version.txt";
 
 const char* firmware_url =
-  "https://raw.githubusercontent.com/Mahesh-rss/new_repo/main/build/esp32.esp32.esp32/test.ino.bin";
+  "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp32.esp32.esp32/test.ino.bin";
 
 const int CURRENT_VERSION = 3;
 
@@ -380,7 +380,6 @@ void setup() {
 
   if (ssid.length() > 0) {
 
-    Serial.println("Saved WiFi credentials found");
 
     connectToWiFi();
 
