@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/esp8266_ota_test.ino.bin";
 
-const int CURRENT_VERSION = 1;
+const int CURRENT_VERSION = 2;
 
 
 #define EEPROM_SIZE 128
@@ -371,7 +371,7 @@ void loop() {
 
   server.handleClient();
   digitalWrite(LED_PIN, LOW);  // LED ON
-  delay(1000);
+  delay(2000);
 
   digitalWrite(LED_PIN, HIGH);  // LED OFF
   delay(1000);
