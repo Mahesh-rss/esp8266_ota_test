@@ -266,7 +266,6 @@ if (apStarted) {
 
 
 void checkOTA() {
-
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi not connected");
     return;
@@ -287,96 +286,126 @@ void checkOTA() {
   Serial.print("Version HTTP code: ");
   Serial.println(httpCode);
 
-  if (httpCode == HTTP_CODE_OK) {
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("Failed to check version");
+    http.end();
+    return;
+  }
 
-    String serverVersion = http.getString();
-    serverVersion.trim();
+  String serverVersion = http.getString();
+  serverVersion.trim();
 
-    int newVersion = serverVersion.toInt();
+  int newVersion = serverVersion.toInt();
 
-    Serial.print("Current version: ");
-    Serial.println(CURRENT_VERSION);
+  Serial.print("Current version: ");
+  Serial.println(CURRENT_VERSION);
 
-    Serial.print("Server version: ");
-    Serial.println(newVersion);
+  Serial.print("Server version: ");
+  Serial.println(newVersion);
 
-    if (newVersion > CURRENT_VERSION) {
+  http.end();
 
-      Serial.println("New firmware available");
+  if (newVersion <= CURRENT_VERSION) {
+    Serial.println("No update required");
+    return;
+  }
 
-      http.end();
+  Serial.println("New firmware available");
 
-      http.begin(client, firmware_url);
+  http.begin(client, firmware_url);
 
-      httpCode = http.GET();
+  httpCode = http.GET();
 
-      Serial.print("Firmware HTTP code: ");
-      Serial.println(httpCode);
+  Serial.print("Firmware HTTP code: ");
+  Serial.println(httpCode);
 
-      if (httpCode == HTTP_CODE_OK) {
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("Firmware download failed");
+    http.end();
+    return;
+  }
 
-        int contentLength = http.getSize();
+  int contentLength = http.getSize();
 
-        Serial.print("Firmware size: ");
-        Serial.println(contentLength);
+  Serial.print("Firmware size: ");
+  Serial.println(contentLength);
 
-        if (contentLength > 0) {
+  if (contentLength <= 0) {
+    Serial.println("Invalid firmware size");
+    http.end();
+    return;
+  }
 
-          Serial.println("Starting OTA...");
+  if (!Update.begin(contentLength)) {
+    Serial.print("Update.begin failed: ");
+    Serial.println(Update.getError());
+    http.end();
+    return;
+  }
 
-          if (Update.begin(contentLength)) {
+  Serial.println("OTA memory ready");
 
-            Serial.println("OTA memory ready");
+  WiFiClient* stream = http.getStreamPtr();
 
-            WiFiClient* stream = http.getStreamPtr();
+  uint8_t buffer[1024];
+  size_t totalWritten = 0;
 
-            size_t written = Update.writeStream(*stream);
+  while (http.connected() && totalWritten < contentLength) {
 
-            Serial.print("Written: ");
-            Serial.println(written);
+    size_t available = stream->available();
 
-            if (written == contentLength) {
+    if (available) {
 
-              Serial.println("Firmware written successfully");
+      size_t bytesToRead = available;
 
-              if (Update.end() && Update.isFinished()) {
-
-                Serial.println("OTA successful");
-                Serial.println("Restarting...");
-
-                http.end();
-
-                delay(1000);
-
-                ESP.restart();
-              }
-
-            } else {
-
-              Serial.println("Firmware write incomplete");
-            }
-
-          } else {
-
-            Serial.print("Update.begin failed: ");
-            Serial.println(Update.getError());
-          }
-        }
+      if (bytesToRead > sizeof(buffer)) {
+        bytesToRead = sizeof(buffer);
       }
 
+      size_t bytesRead = stream->readBytes(buffer, bytesToRead);
+
+      if (bytesRead > 0) {
+        size_t written = Update.write(buffer, bytesRead);
+
+        totalWritten += written;
+
+        Serial.print("Written: ");
+        Serial.println(totalWritten);
+      }
+    }
+
+    delay(1);
+  }
+
+  Serial.print("Total written: ");
+  Serial.println(totalWritten);
+
+  if (totalWritten == contentLength) {
+
+    Serial.println("Firmware written successfully");
+
+    if (Update.end() && Update.isFinished()) {
+
+      Serial.println("OTA successful");
+      Serial.println("Restarting...");
+
       http.end();
+
+      delay(1000);
+      ESP.restart();
 
     } else {
 
-      Serial.println("No update required");
-      http.end();
+      Serial.print("Update.end failed: ");
+      Serial.println(Update.getError());
     }
 
   } else {
 
-    Serial.println("Failed to check version");
-    http.end();
+    Serial.println("Firmware write incomplete");
   }
+
+  http.end();
 }
 
 
