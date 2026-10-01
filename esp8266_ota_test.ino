@@ -17,7 +17,7 @@ const char* version_url =
 const char* firmware_url =
   "https://raw.githubusercontent.com/Mahesh-rss/esp8266_ota_test/main/build/esp8266.esp8266.generic/test.ino.bin";
 
-const int CURRENT_VERSION = 2;
+const int CURRENT_VERSION = 3;
 
 #define EEPROM_SIZE 128
 #define SSID_ADDR 0
@@ -382,7 +382,6 @@ void checkOTA() {
 
 void setup() {
 
-
   pinMode(LED_PIN, OUTPUT);
 
   Serial.begin(115200);
@@ -392,43 +391,29 @@ void setup() {
   Serial.println();
   Serial.println("Starting...");
 
-
   loadWiFiCredentials();
 
+  WiFi.mode(WIFI_AP_STA);
 
-  if (ssid.length() > 0) {
+  bool apStarted = WiFi.softAP("ESP8266-Setup");
 
-
-    connectToWiFi();
-
-  } else {
-
-    Serial.println("No saved WiFi credentials");
-
-    startWiFiConfig();
-  }
-
-
-  if (WiFi.status() == WL_CONNECTED) {
-
-    Serial.println();
-    Serial.println("Checking OTA...");
-
-    checkOTA();
-  }
-
-
-  if (WiFi.softAPIP()) {
-
-    Serial.println();
+  if (apStarted) {
+    Serial.println("Setup AP started");
     Serial.print("Setup AP IP: ");
     Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("Setup AP failed");
   }
 
+  if (ssid.length() > 0) {
+    connectToWiFi();
+  }
 
-  if (WiFi.getMode() == WIFI_AP_STA) {
+  startWiFiConfig();
 
-    startWiFiConfig();
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println();
+    checkOTA();
   }
 }
 
